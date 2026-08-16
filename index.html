@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyberdeck">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14171F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Linkora">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+<title>Linkora</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+:root{
+  --font-display:'JetBrains Mono','Space Mono',monospace;
+  --font-ui:'Manrope','Segoe UI',sans-serif;
+}
+
+/* ===== THEME: CYBER DECK (default) ===== */
+[data-theme="cyberdeck"]{
+  --bg-deep:#0A0C10;
+  --bg-panel:#14171F;
+  --bg-screen:#0A0C10;
+  --bg-btn:#1C202C;
+  --bg-btn-active:#252B3B;
+  --accent:#FFB454;
+  --accent-dim:#8A6A38;
+  --accent2:#5EE6FF;
+  --text-hi:#EDEFF4;
+  --text-dim:#7C8397;
+  --danger:#FF6B6B;
+  --grid-dot:rgba(255,255,255,0.045);
+}
+/* ===== THEME: NEON GRID ===== */
+[data-theme="neongrid"]{
+  --bg-deep:#0B0713;
+  --bg-panel:#160C24;
+  --bg-screen:#0B0713;
+  --bg-btn:#221333;
+  --bg-btn-active:#2E1A45;
+  --accent:#E14BFF;
+  --accent-dim:#7A2E8C;
+  --accent2:#7C8CFF;
+  --text-hi:#F3EBFF;
+  --text-dim:#9A85B8;
+  --danger:#FF5C8A;
+  --grid-dot:rgba(225,75,255,0.07);
+}
+/* ===== THEME: TERMINAL ===== */
+[data-theme="terminal"]{
+  --bg-deep:#060A07;
+  --bg-panel:#0D140E;
+  --bg-screen:#060A07;
+  --bg-btn:#131C14;
+  --bg-btn-active:#1B291D;
+  --accent:#5CFF9D;
+  --accent-dim:#2E8A55;
+  --accent2:#B6FF5C;
+  --text-hi:#E4FFEB;
+  --text-dim:#6E9179;
+  --danger:#FF6B6B;
+  --grid-dot:rgba(92,255,157,0.06);
+}
+/* ===== THEME: DAYLIGHT ===== */
+[data-theme="daylight"]{
+  --bg-deep:#E9EBEF;
+  --bg-panel:#F6F7F9;
+  --bg-screen:#20242E;
+  --bg-btn:#FFFFFF;
+  --bg-btn-active:#E4E7EE;
+  --accent:#C9660C;
+  --accent-dim:#E3B48A;
+  --accent2:#2264D1;
+  --text-hi:#1C1F27;
+  --text-dim:#6B7180;
+  --danger:#D6395B;
+  --grid-dot:rgba(20,24,32,0.05);
+}
+
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; touch-action:manipulation;}
+html,body{height:100%; overscroll-behavior:none; -webkit-user-select:none;}
+body{
+  font-family:var(--font-ui);
+  background:var(--bg-deep);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  min-height:100dvh;
+  overflow:hidden;
+  overscroll-behavior:none;
+  position:fixed;
+  inset:0;
+}
+.trackpad{ touch-action:none; }
+
+.phone{
+  width:100%;
+  max-width:420px;
+  height:100vh;
+  max-height:900px;
+  background:var(--bg-panel);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  border-radius:0;
+  overflow:hidden;
+  transition:background .35s ease;
+}
+@media (min-width:480px){
+  .phone{ height:860px; margin:20px; border-radius:34px; box-shadow:0 30px 80px rgba(0,0,0,.55); border:8px solid #05060a; }
+}
+
+/* ===== STATUS / LCD READOUT ===== */
+.statusbar{
+  padding:16px 18px 12px;
+  background:var(--bg-screen);
+  border-bottom:1px solid var(--grid-dot);
+  position:relative;
+}
+.status-row{ display:flex; justify-content:space-between; align-items:center; }
+.brand{
+  font-family:var(--font-display);
+  font-size:11px;
+  letter-spacing:3px;
+  color:var(--accent);
+  opacity:.85;
+}
+.signal{ display:flex; align-items:flex-end; gap:3px; height:14px; }
+.signal i{ width:3px; background:var(--text-dim); border-radius:1px; display:block; }
+.signal i:nth-child(1){height:5px;} .signal i:nth-child(2){height:8px;} .signal i:nth-child(3){height:11px;} .signal i:nth-child(4){height:14px;}
+.signal.on i{ background:var(--accent2); }
+
+.install-btn{
+  font-family:var(--font-display); font-size:10px; letter-spacing:1px;
+  background:var(--bg-btn); color:var(--accent); border:1px solid var(--accent-dim);
+  border-radius:8px; padding:6px 10px; cursor:pointer;
+}
+.install-btn:active{ transform:scale(.95); }
+
+.install-sheet{
+  position:absolute; inset:0; background:rgba(0,0,0,.65); z-index:50;
+  display:none; align-items:flex-end; justify-content:center;
+}
+.install-sheet.show{ display:flex; }
+.install-sheet .card{
+  background:var(--bg-panel); border-radius:20px 20px 0 0; padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+  width:100%; max-width:420px; border-top:1px solid var(--grid-dot);
+}
+.install-sheet h3{ font-family:var(--font-display); font-size:13px; letter-spacing:1.5px; color:var(--accent); margin-bottom:10px; }
+.install-sheet p{ font-size:13px; color:var(--text-dim); line-height:1.6; margin-bottom:14px; }
+.install-sheet .steps{ font-size:12.5px; color:var(--text-hi); line-height:1.9; margin-bottom:16px; }
+.install-sheet .close-btn{
+  width:100%; background:var(--bg-btn); border:1px solid var(--grid-dot); border-radius:12px;
+  padding:12px; color:var(--text-hi); font-family:var(--font-ui); font-weight:600; font-size:13px;
+}
+.install-sheet .download-link{
+  display:block; text-align:center; margin-top:10px; font-size:12px; color:var(--text-dim);
+  text-decoration:underline;
+}
+
+.device-readout{
+  margin-top:10px;
+  font-family:var(--font-display);
+  font-size:13px;
+  color:var(--text-hi);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  letter-spacing:.5px;
+}
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; }
+.dot.connected{ background:var(--accent2); box-shadow:0 0 8px var(--accent2); animation:pulse 1.8s infinite; }
+.dot.searching{ background:var(--accent); animation:blink .8s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.4;} }
+@keyframes blink{ 0%,100%{opacity:.3;} 50%{opacity:1;} }
+
+.scan-btn{
+  margin-left:auto; font-family:var(--font-display); font-size:10px; letter-spacing:.5px;
+  background:var(--bg-btn); color:var(--accent2); border:1px solid var(--accent-dim);
+  border-radius:8px; padding:5px 9px; cursor:pointer;
+}
+.scan-btn.hide{ display:none; }
+
+.scan-overlay{
+  position:fixed; inset:0; background:#000; z-index:100;
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+}
+.scan-overlay.show{ display:flex; }
+.scan-overlay video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(1.05); }
+.scan-topbar{
+  position:absolute; top:0; left:0; right:0; z-index:3;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 18px calc(16px + env(safe-area-inset-top));
+}
+.scan-topbar .scan-title{ font-family:var(--font-display,monospace); font-size:11px; letter-spacing:2px; color:#fff; opacity:.85; }
+.torch-btn{
+  width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.3); color:#fff; font-size:16px; display:none;
+  align-items:center; justify-content:center;
+}
+.torch-btn.show{ display:flex; }
+.torch-btn.active{ background:rgba(255,180,84,.35); border-color:#FFB454; }
+
+.scan-frame{
+  width:230px; height:230px; position:relative; z-index:2;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.5);
+  border-radius:20px;
+}
+.scan-frame .corner{
+  position:absolute; width:34px; height:34px; border:3px solid #5EE6FF;
+}
+.scan-frame .corner.tl{ top:-2px; left:-2px; border-right:none; border-bottom:none; border-top-left-radius:16px; }
+.scan-frame .corner.tr{ top:-2px; right:-2px; border-left:none; border-bottom:none; border-top-right-radius:16px; }
+.scan-frame .corner.bl{ bottom:-2px; left:-2px; border-right:none; border-top:none; border-bottom-left-radius:16px; }
+.scan-frame .corner.br{ bottom:-2px; right:-2px; border-left:none; border-top:none; border-bottom-right-radius:16px; }
+.scan-laser{
+  position:absolute; left:6%; right:6%; height:2px;
+  background:linear-gradient(90deg, transparent, #5EE6FF, transparent);
+  box-shadow:0 0 10px 2px #5EE6FF;
+  animation:laserMove 1.6s ease-in-out infinite;
+}
+@keyframes laserMove{
+  0%{ top:8%; opacity:.2; } 50%{ top:92%; opacity:1; } 100%{ top:8%; opacity:.2; }
+}
+.scan-frame.locked .corner{ border-color:#5CFF9D; }
+.scan-frame.locked .scan-laser{ display:none; }
+
+.scan-hint{ position:relative; z-index:2; color:#fff; font-family:var(--font-ui); font-size:13px; margin-top:20px; text-align:center; padding:0 30px; opacity:.85; }
+.scan-cancel{
+  position:relative; z-index:2; margin-top:22px; background:rgba(255,255,255,.12); color:#fff;
+  border:1px solid rgba(255,255,255,.3); border-radius:10px; padding:10px 24px; font-family:var(--font-display); font-size:11px; letter-spacing:1px;
+}
+
+/* ===== CONTENT AREA ===== */
+.content{ flex:1; position:relative; overflow:hidden; }
+.screen{ position:absolute; inset:0; padding:18px; display:none; flex-direction:column; }
+.screen.active{ display:flex; }
+
+/* ===== TOUCHPAD SCREEN ===== */
+.pad-label{ font-family:var(--font-display); font-size:10px; letter-spacing:2px; color:var(--text-dim); margin-bottom:10px; }
+.trackpad{
+  flex:1;
+  background:
+    radial-gradient(var(--grid-dot) 1.4px, transparent 1.4px);
+  background-size:16px 16px;
+  background-color:var(--bg-screen);
+  border-radius:18px;
+  border:1px solid var(--grid-dot);
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  touch-action:none;
+}
+.trackpad .hint{ font-family:var(--font-display); font-size:11px; color:var(--text-dim); letter-spacing:1px; text-align:center; opacity:.6; pointer-events:none;}
+.ripple{
+  position:absolute; width:16px; height:16px; border-radius:50%;
+  background:var(--accent2); opacity:.5; pointer-events:none;
+  transform:translate(-50%,-50%) scale(0);
+  animation:rip .5s ease-out forwards;
+}
+@keyframes rip{ to{ transform:translate(-50%,-50%) scale(3.2); opacity:0; } }
+
+.pad-controls{ display:flex; gap:10px; margin-top:12px; height:64px; }
+.click-btn{
+  flex:1; background:var(--bg-btn); border-radius:14px; border:1px solid var(--grid-dot);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-size:11px; letter-spacing:1.5px; color:var(--text-dim);
+  transition:all .1s ease;
+}
+.click-btn:active, .click-btn.pressed{ background:var(--bg-btn-active); color:var(--accent); transform:scale(.97); box-shadow:inset 0 2px 6px rgba(0,0,0,.4); }
+.click-btn.mid{ flex:0 0 44px; font-size:16px; }
+
+.scrollstrip{
+  position:absolute; right:8px; top:8px; bottom:8px; width:26px;
+  border-radius:13px; background:var(--grid-dot);
+}
+
+/* ===== KEYBOARD SCREEN ===== */
+.text-out{
+  background:var(--bg-screen); border:1px solid var(--grid-dot); border-radius:12px;
+  padding:12px 14px; font-family:var(--font-display); font-size:13px; color:var(--text-hi);
+  min-height:44px; margin-bottom:14px; width:100%; outline:none;
+}
+.text-out::placeholder{ color:var(--text-dim); }
+
+.dpad-row{ display:flex; gap:10px; margin-bottom:10px; }
+.key{
+  background:var(--bg-btn); border:1px solid var(--grid-dot); border-radius:10px;
+  color:var(--text-hi); font-family:var(--font-ui); font-weight:600; font-size:12.5px;
+  padding:12px 6px; text-align:center; flex:1;
+  transition:all .08s ease;
+}
+.key:active, .key.pressed{ background:var(--bg-btn-active); color:var(--accent); transform:scale(.95); }
+.key.wide{ flex:2.4; }
+.key.accent{ color:var(--accent); border-color:var(--accent-dim); }
+
+.dpad-cluster{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:150px; margin:6px auto 16px; }
+.dpad-cluster .key{ padding:14px 0; font-size:15px; }
+.dpad-cluster .empty{ visibility:hidden; }
+
+.media-row{ display:flex; gap:8px; margin-top:auto; }
+.media-row .key{ font-size:15px; }
+
+/* ===== THEME SCREEN ===== */
+.theme-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px; }
+.theme-card{
+  border-radius:16px; padding:14px; border:2px solid transparent; cursor:pointer;
+  background:var(--bg-btn); transition:all .15s ease;
+}
+.theme-card.active{ border-color:var(--accent); }
+.swatches{ display:flex; gap:6px; margin-bottom:10px; }
+.swatch{ width:18px; height:18px; border-radius:5px; }
+.theme-card .name{ font-family:var(--font-display); font-size:11px; letter-spacing:1px; color:var(--text-hi); }
+.theme-card .sub{ font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+.section-label{ font-family:var(--font-display); font-size:10px; letter-spacing:2px; color:var(--text-dim); margin:20px 0 10px; }
+.settings-row{
+  display:flex; justify-content:space-between; align-items:center;
+  background:var(--bg-btn); border-radius:12px; padding:12px 14px; margin-bottom:8px;
+  font-size:13px; color:var(--text-hi);
+}
+.toggle{ width:38px; height:22px; border-radius:11px; background:var(--bg-deep); position:relative; }
+.toggle .knob{ width:16px; height:16px; border-radius:50%; background:var(--text-dim); position:absolute; top:3px; left:3px; transition:all .2s ease; }
+.toggle.on{ background:var(--accent-dim); }
+.toggle.on .knob{ left:19px; background:var(--accent); }
+
+/* ===== BOTTOM NAV ===== */
+.navbar{
+  display:flex; background:var(--bg-screen); border-top:1px solid var(--grid-dot);
+  padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+}
+.navbtn{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:6px 0; color:var(--text-dim); font-size:10px; font-family:var(--font-display); letter-spacing:1px;
+}
+.navbtn svg{ width:20px; height:20px; stroke:var(--text-dim); fill:none; stroke-width:1.8; }
+.navbtn.active{ color:var(--accent); }
+.navbtn.active svg{ stroke:var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="statusbar">
+    <div class="status-row">
+      <span class="brand">LINKORA</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button id="installBtn" class="install-btn" style="display:none;">⬇ INSTALL</button>
+        <div class="signal" id="signal"><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <div class="device-readout" id="statusRow">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">NOT CONNECTED</span>
+      <button id="scanBtn" class="scan-btn">📷 SCAN TO CONNECT</button>
+    </div>
+  </div>
+
+  <div class="scan-overlay" id="scanOverlay">
+    <video id="scanVideo" playsinline autoplay muted></video>
+    <canvas id="scanCanvas" style="display:none;"></canvas>
+    <div class="scan-topbar">
+      <span class="scan-title">SCANNING…</span>
+      <button class="torch-btn" id="torchBtn">💡</button>
+    </div>
+    <div class="scan-frame" id="scanFrame">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="scan-laser"></div>
+    </div>
+    <div class="scan-hint" id="scanHint">Align the QR code inside the frame</div>
+    <button class="scan-cancel" id="scanCancel">CANCEL</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TOUCHPAD -->
+    <div class="screen active" id="screen-pad">
+      <div class="pad-label">TOUCHPAD</div>
+      <div class="trackpad" id="trackpad">
+        <span class="hint">SWIPE TO MOVE CURSOR</span>
+        <div class="scrollstrip"></div>
+      </div>
+      <div class="pad-controls">
+        <div class="click-btn" data-btn="left">LEFT CLICK</div>
+        <div class="click-btn mid">⠿</div>
+        <div class="click-btn" data-btn="right">RIGHT CLICK</div>
+      </div>
+    </div>
+
+    <!-- KEYBOARD -->
+    <div class="screen" id="screen-key">
+      <div class="pad-label">KEYBOARD</div>
+      <input class="text-out" id="textOut" placeholder="Type here to send text…" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+      <div class="dpad-row">
+        <div class="key wide" data-key="Esc">ESC</div>
+        <div class="key wide" data-key="Tab">TAB</div>
+        <div class="key wide" data-key="Ctrl">CTRL</div>
+      </div>
+      <div class="dpad-row">
+        <div class="key wide" data-key="Alt">ALT</div>
+        <div class="key wide accent" data-key="Win">⊞ WIN</div>
+        <div class="key wide" data-key="Backspace">⌫ BACK</div>
+      </div>
+
+      <div class="dpad-cluster">
+        <div class="key empty"></div>
+        <div class="key" data-key="Up">▲</div>
+        <div class="key empty"></div>
+        <div class="key" data-key="Left">◀</div>
+        <div class="key accent" data-key="Enter">↵</div>
+        <div class="key" data-key="Right">▶</div>
+        <div class="key empty"></div>
+        <div class="key" data-key="Down">▼</div>
+        <div class="key empty"></div>
+      </div>
+
+      <div class="media-row">
+        <div class="key" data-key="VolDown">🔉</div>
+        <div class="key" data-key="PlayPause">⏯</div>
+        <div class="key" data-key="VolUp">🔊</div>
+        <div class="key" data-key="Mute">🔇</div>
+      </div>
+    </div>
+
+    <!-- THEMES -->
+    <div class="screen" id="screen-theme">
+      <div class="pad-label">APPEARANCE</div>
+      <div class="theme-grid" id="themeGrid">
+        <div class="theme-card active" data-theme="cyberdeck">
+          <div class="swatches">
+            <div class="swatch" style="background:#14171F"></div>
+            <div class="swatch" style="background:#FFB454"></div>
+            <div class="swatch" style="background:#5EE6FF"></div>
+          </div>
+          <div class="name">CYBER DECK</div>
+          <div class="sub">Default control panel</div>
+        </div>
+        <div class="theme-card" data-theme="neongrid">
+          <div class="swatches">
+            <div class="swatch" style="background:#160C24"></div>
+            <div class="swatch" style="background:#E14BFF"></div>
+            <div class="swatch" style="background:#7C8CFF"></div>
+          </div>
+          <div class="name">NEON GRID</div>
+          <div class="sub">Gamer mode</div>
+        </div>
+        <div class="theme-card" data-theme="terminal">
+          <div class="swatches">
+            <div class="swatch" style="background:#0D140E"></div>
+            <div class="swatch" style="background:#5CFF9D"></div>
+            <div class="swatch" style="background:#B6FF5C"></div>
+          </div>
+          <div class="name">TERMINAL</div>
+          <div class="sub">Hacker mode</div>
+        </div>
+        <div class="theme-card" data-theme="daylight">
+          <div class="swatches">
+            <div class="swatch" style="background:#F6F7F9"></div>
+            <div class="swatch" style="background:#C9660C"></div>
+            <div class="swatch" style="background:#2264D1"></div>
+          </div>
+          <div class="name">DAYLIGHT</div>
+          <div class="sub">Light mode</div>
+        </div>
+      </div>
+
+      <div class="section-label">TRACKPAD</div>
+      <div class="settings-row">
+        <span>Pointer sensitivity</span>
+        <span style="font-family:var(--font-display); color:var(--accent); font-size:12px;">MED</span>
+      </div>
+      <div class="settings-row">
+        <span>Vibration feedback</span>
+        <div class="toggle on" id="vibToggle"><div class="knob"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="install-sheet" id="installSheet">
+    <div class="card">
+      <h3 id="sheetTitle">ADD TO HOME SCREEN</h3>
+      <p id="sheetSub">Install Remote Deck as an app — full screen, no browser bar, no zoom.</p>
+      <div class="steps" id="sheetSteps"></div>
+      <button class="close-btn" id="sheetClose">GOT IT</button>
+      <a class="download-link" id="downloadLink" href="#" download="index.html">or download this page as a file</a>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <div class="navbtn active" data-screen="pad">
+      <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="4" y1="10" x2="20" y2="10"/></svg>
+      TOUCHPAD
+    </div>
+    <div class="navbtn" data-screen="key">
+      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="7" y1="15" x2="17" y2="15"/></svg>
+      KEYBOARD
+    </div>
+    <div class="navbtn" data-screen="theme">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="8" r="1.2"/><circle cx="16" cy="12" r="1.2"/><circle cx="8" cy="12" r="1.2"/><circle cx="12" cy="16" r="1.2"/></svg>
+      THEME
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---- NAV SWITCHING ----
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+  });
+});
+
+// ---- MOCK CONNECTION SEQUENCE ----
+const dot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const signal = document.getElementById('signal');
+
+// ---- TRACKPAD: ripple feedback + real move commands ----
+const pad = document.getElementById('trackpad');
+function ripple(x,y){
+  const r = document.createElement('div');
+  r.className='ripple';
+  const rect = pad.getBoundingClientRect();
+  r.style.left = (x-rect.left)+'px';
+  r.style.top = (y-rect.top)+'px';
+  pad.appendChild(r);
+  setTimeout(()=>r.remove(),500);
+}
+let lastX = 0, lastY = 0, dragging = false;
+const SENSITIVITY = 1.6;
+pad.addEventListener('pointerdown', e=>{
+  if(e.target.closest('.scrollstrip')) return;
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  ripple(e.clientX, e.clientY);
+});
+pad.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const dx = (e.clientX - lastX) * SENSITIVITY;
+  const dy = (e.clientY - lastY) * SENSITIVITY;
+  lastX = e.clientX; lastY = e.clientY;
+  sendMsg({type:'move', dx: Math.round(dx), dy: Math.round(dy)});
+  ripple(e.clientX, e.clientY);
+});
+pad.addEventListener('pointerup', ()=> dragging = false);
+pad.addEventListener('pointerleave', ()=> dragging = false);
+
+// ---- SCROLL STRIP ----
+const scrollStrip = document.querySelector('.scrollstrip');
+let scrollLastY = 0, scrolling = false;
+scrollStrip.addEventListener('pointerdown', e=>{ scrolling = true; scrollLastY = e.clientY; e.stopPropagation(); });
+scrollStrip.addEventListener('pointermove', e=>{
+  if(!scrolling) return;
+  const dy = e.clientY - scrollLastY;
+  scrollLastY = e.clientY;
+  sendMsg({type:'scroll', dy: Math.round(-dy)});
+  e.stopPropagation();
+});
+window.addEventListener('pointerup', ()=> scrolling = false);
+
+// ---- CLICK BUTTONS ----
+document.querySelectorAll('.click-btn[data-btn]').forEach(b=>{
+  b.addEventListener('pointerdown', ()=>{ b.classList.add('pressed'); sendMsg({type:'click', button:b.dataset.btn}); });
+  b.addEventListener('pointerup', ()=>b.classList.remove('pressed'));
+  b.addEventListener('pointerleave', ()=>b.classList.remove('pressed'));
+});
+
+// ---- KEY PRESS FEEDBACK ----
+document.querySelectorAll('.key[data-key]').forEach(k=>{
+  k.addEventListener('pointerdown', ()=>{ k.classList.add('pressed'); sendMsg({type:'key', key:k.dataset.key}); });
+  k.addEventListener('pointerup', ()=>k.classList.remove('pressed'));
+  k.addEventListener('pointerleave', ()=>k.classList.remove('pressed'));
+});
+
+// ---- TEXT INPUT ----
+const textOut = document.getElementById('textOut');
+const SPECIAL_KEY_MAP = { Enter:'Enter', Backspace:'Backspace', Tab:'Tab', Escape:'Esc',
+  ArrowUp:'Up', ArrowDown:'Down', ArrowLeft:'Left', ArrowRight:'Right' };
+textOut.addEventListener('keydown', (e)=>{
+  if(SPECIAL_KEY_MAP[e.key]){
+    sendMsg({type:'key', key:SPECIAL_KEY_MAP[e.key]});
+    if(e.key === 'Enter'){ e.preventDefault(); }
+  } else if(e.key.length === 1){
+    sendMsg({type:'text', text:e.key});
+  }
+});
+
+// ---- THEME SWITCHING ----
+document.querySelectorAll('.theme-card').forEach(card=>{
+  card.addEventListener('click', ()=>{
+    document.querySelectorAll('.theme-card').forEach(c=>c.classList.remove('active'));
+    card.classList.add('active');
+    document.documentElement.setAttribute('data-theme', card.dataset.theme);
+  });
+});
+
+// ---- VIBRATION TOGGLE ----
+document.getElementById('vibToggle').addEventListener('click', function(){
+  this.classList.toggle('on');
+});
+
+// ---- PREVENT PULL-TO-REFRESH / BOUNCE ----
+document.body.addEventListener('touchmove', function(e){
+  if(e.target.closest('.trackpad')) return; // trackpad handles its own touch
+  e.preventDefault();
+}, { passive:false });
+
+// ---- PREVENT PINCH ZOOM ----
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+
+// ---- SERVICE WORKER (app shell, works after GitHub Pages deploy) ----
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+// ---- INSTALL FLOW ----
+const installBtn = document.getElementById('installBtn');
+const sheet = document.getElementById('installSheet');
+const sheetSteps = document.getElementById('sheetSteps');
+const sheetTitle = document.getElementById('sheetTitle');
+const sheetClose = document.getElementById('sheetClose');
+const downloadLink = document.getElementById('downloadLink');
+
+let deferredPrompt = null;
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+if(!isStandalone){
+  installBtn.style.display = 'inline-block';
+}
+
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+
+installBtn.addEventListener('click', async ()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    return;
+  }
+  // manual instructions fallback
+  if(isIOS){
+    sheetTitle.textContent = 'ADD TO HOME SCREEN — iPHONE';
+    sheetSteps.innerHTML = '1. Tap the <b>Share</b> icon in Safari<br>2. Scroll down, tap <b>Add to Home Screen</b><br>3. Tap <b>Add</b> — app icon ready';
+  } else {
+    sheetTitle.textContent = 'ADD TO HOME SCREEN';
+    sheetSteps.innerHTML = '1. Tap the <b>⋮ menu</b> (top right of browser)<br>2. Tap <b>Install app</b> / <b>Add to Home screen</b><br>3. Confirm — app icon ready';
+  }
+  sheet.classList.add('show');
+});
+
+sheetClose.addEventListener('click', ()=> sheet.classList.remove('show'));
+
+// simple "download this page" fallback
+downloadLink.addEventListener('click', (e)=>{
+  e.preventDefault();
+  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'linkora.html';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ===================== CONNECTION ENGINE =====================
+let socket = null;
+let camStream = null;
+const scanBtn = document.getElementById('scanBtn');
+const scanOverlay = document.getElementById('scanOverlay');
+const scanVideo = document.getElementById('scanVideo');
+const scanCanvas = document.getElementById('scanCanvas');
+const scanCancel = document.getElementById('scanCancel');
+
+function sendMsg(obj){
+  if(socket && socket.readyState === WebSocket.OPEN){
+    socket.send(JSON.stringify(obj));
+  }
+}
+
+function setStatus(state, label){
+  // state: 'off' | 'connecting' | 'on'
+  dot.classList.remove('searching','connected');
+  if(state === 'on'){ dot.classList.add('connected'); signal.classList.add('on'); }
+  else if(state === 'connecting'){ dot.classList.add('searching'); signal.classList.remove('on'); }
+  else { signal.classList.remove('on'); }
+  statusText.textContent = label;
+  scanBtn.classList.toggle('hide', state === 'on');
+}
+
+function connectTo(wsUrl){
+  setStatus('connecting', 'CONNECTING…');
+  try{ socket = new WebSocket(wsUrl); } catch(err){ setStatus('off','NOT CONNECTED'); return; }
+
+  socket.onopen = ()=>{
+    localStorage.setItem('linkora_ws_url', wsUrl);
+    setStatus('on', 'CONNECTED');
+  };
+  socket.onclose = ()=> setStatus('off', 'DISCONNECTED');
+  socket.onerror = ()=> setStatus('off', 'CONNECTION FAILED');
+}
+
+// try silently reconnecting to the last known laptop on load
+const savedUrl = localStorage.getItem('linkora_ws_url');
+if(savedUrl){ connectTo(savedUrl); } else { setStatus('off','NOT CONNECTED'); }
+
+// ---- QR SCANNING ----
+scanBtn.addEventListener('click', openScanner);
+scanCancel.addEventListener('click', closeScanner);
+const torchBtn = document.getElementById('torchBtn');
+const scanFrame = document.getElementById('scanFrame');
+const scanHint = document.getElementById('scanHint');
+let torchOn = false;
+let videoTrack = null;
+
+async function openScanner(){
+  scanOverlay.classList.add('show');
+  scanFrame.classList.remove('locked');
+  scanHint.textContent = 'Align the QR code inside the frame';
+  torchBtn.classList.remove('show','active');
+  torchOn = false;
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    scanVideo.srcObject = camStream;
+    videoTrack = camStream.getVideoTracks()[0];
+
+    const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+    if(caps.torch){ torchBtn.classList.add('show'); }
+
+    requestAnimationFrame(scanLoop);
+  }catch(err){
+    scanHint.textContent = 'Camera permission denied — check browser settings';
+    setTimeout(closeScanner, 1600);
+  }
+}
+
+torchBtn.addEventListener('click', async ()=>{
+  if(!videoTrack) return;
+  torchOn = !torchOn;
+  torchBtn.classList.toggle('active', torchOn);
+  try{ await videoTrack.applyConstraints({ advanced:[{ torch: torchOn }] }); }catch(e){}
+});
+
+function closeScanner(){
+  scanOverlay.classList.remove('show');
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream = null; videoTrack = null; }
+}
+
+// scan the full frame (downscaled for speed) — avoids crop/frame mismatch issues
+function scanLoop(){
+  if(!scanOverlay.classList.contains('show')) return;
+  if(scanVideo.readyState === scanVideo.HAVE_ENOUGH_DATA){
+    const vw = scanVideo.videoWidth, vh = scanVideo.videoHeight;
+    if(vw && vh){
+      const maxDim = 640; // downscale longest side for faster decode, keep full frame (no crop)
+      const scale = Math.min(1, maxDim / Math.max(vw, vh));
+      const dw = Math.round(vw * scale), dh = Math.round(vh * scale);
+      scanCanvas.width = dw; scanCanvas.height = dh;
+      const ctx = scanCanvas.getContext('2d', { willReadFrequently:true });
+      ctx.drawImage(scanVideo, 0, 0, dw, dh);
+      const imgData = ctx.getImageData(0, 0, dw, dh);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:'attemptBoth' });
+      if(code && code.data && code.data.startsWith('ws://')){
+        scanFrame.classList.add('locked');
+        scanHint.textContent = 'Connected ✓';
+        setTimeout(()=>{
+          closeScanner();
+          connectTo(code.data.trim());
+        }, 250);
+        return;
+      }
+    }
+  }
+  requestAnimationFrame(scanLoop);
+}
+
+</script>
+
+</body>
+</html>
