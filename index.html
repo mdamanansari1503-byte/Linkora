@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" href="./icon-192.png">
 <title>Linkora</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 :root{
   --font-display:'JetBrains Mono','Space Mono',monospace;
@@ -234,6 +234,24 @@ body{
   position:relative; z-index:2; margin-top:22px; background:rgba(255,255,255,.12); color:#fff;
   border:1px solid rgba(255,255,255,.3); border-radius:10px; padding:10px 24px; font-family:var(--font-display); font-size:11px; letter-spacing:1px;
 }
+.manual-toggle{
+  position:relative; z-index:2; margin-top:18px; background:transparent; color:#7C8397;
+  border:none; font-family:var(--font-ui); font-size:12px; text-decoration:underline;
+}
+.manual-box{
+  position:relative; z-index:2; display:none; margin-top:14px; gap:8px; flex-direction:row;
+  padding:0 24px; width:100%;
+}
+.manual-box.show{ display:flex; }
+.manual-box input{
+  flex:1; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25); border-radius:10px;
+  padding:10px 12px; color:#fff; font-family:var(--font-display); font-size:13px; outline:none;
+}
+.manual-box input::placeholder{ color:rgba(255,255,255,.4); }
+.manual-box button{
+  background:#5EE6FF; color:#0A0C10; border:none; border-radius:10px; padding:10px 16px;
+  font-family:var(--font-ui); font-weight:700; font-size:12px;
+}
 
 /* ===== CONTENT AREA ===== */
 .content{ flex:1; position:relative; overflow:hidden; }
@@ -377,6 +395,11 @@ body{
     </div>
     <div class="scan-hint" id="scanHint">Align the QR code inside the frame</div>
     <button class="scan-cancel" id="scanCancel">CANCEL</button>
+    <button class="manual-toggle" id="manualToggle">Or type IP manually</button>
+    <div class="manual-box" id="manualBox">
+      <input id="manualInput" placeholder="192.168.1.5:8765" autocomplete="off" autocapitalize="off">
+      <button id="manualConnect">CONNECT</button>
+    </div>
   </div>
 
   <div class="content">
@@ -732,6 +755,26 @@ const scanHint = document.getElementById('scanHint');
 let torchOn = false;
 let videoTrack = null;
 
+// ---- MANUAL CONNECT (guaranteed fallback if camera/QR ever fails) ----
+const manualToggle = document.getElementById('manualToggle');
+const manualBox = document.getElementById('manualBox');
+const manualInput = document.getElementById('manualInput');
+const manualConnectBtn = document.getElementById('manualConnect');
+
+manualToggle.addEventListener('click', ()=>{
+  manualBox.classList.toggle('show');
+});
+manualConnectBtn.addEventListener('click', doManualConnect);
+manualInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doManualConnect(); });
+
+function doManualConnect(){
+  let val = manualInput.value.trim();
+  if(!val) return;
+  if(!val.startsWith('ws://')) val = 'ws://' + val;
+  closeScanner();
+  connectTo(val);
+}
+
 async function openScanner(){
   scanOverlay.classList.add('show');
   scanFrame.classList.remove('locked');
@@ -770,6 +813,11 @@ function closeScanner(){
 // scan the full frame (downscaled for speed) — avoids crop/frame mismatch issues
 function scanLoop(){
   if(!scanOverlay.classList.contains('show')) return;
+  if(typeof jsQR === 'undefined'){
+    scanHint.textContent = 'Scanner still loading… you can also type IP manually below';
+    setTimeout(()=>requestAnimationFrame(scanLoop), 400);
+    return;
+  }
   if(scanVideo.readyState === scanVideo.HAVE_ENOUGH_DATA){
     const vw = scanVideo.videoWidth, vh = scanVideo.videoHeight;
     if(vw && vh){
@@ -780,7 +828,10 @@ function scanLoop(){
       const ctx = scanCanvas.getContext('2d', { willReadFrequently:true });
       ctx.drawImage(scanVideo, 0, 0, dw, dh);
       const imgData = ctx.getImageData(0, 0, dw, dh);
-      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:'attemptBoth' });
+      let code = null;
+      try{
+        code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:'attemptBoth' });
+      }catch(err){ code = null; }
       if(code && code.data && code.data.startsWith('ws://')){
         scanFrame.classList.add('locked');
         scanHint.textContent = 'Connected ✓';
